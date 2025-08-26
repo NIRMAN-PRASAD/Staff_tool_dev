@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the Staffing Tool</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }
+        .wrapper { width: 100%; background-color: #f4f7f6; padding: 20px 0; }
+        .container { max-width: 570px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { color: #2a3a4b; margin: 0; }
+        .content p { margin: 0 0 15px; }
+        .login-button { display: inline-block; padding: 12px 25px; font-size: 16px; color: #ffffff; background-color: #007BFF; text-decoration: none; border-radius: 5px; text-align: center; }
+        .footer { font-size: 12px; color: #888888; text-align: center; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>Welcome Aboard!</h1>
+            </div>
+            <div class="content">
+                <p>Hello {{user_name}},</p>
+                <p>An account has been created for you on the Staffing Tool platform.</p>
+                <p>Your assigned role is: <strong>{{user_role}}</strong></p>
+                <p>To get started, please use the button below to log in. You will be asked to enter your email address to receive a secure One-Time Password (OTP).</p>
+                <p style="text-align: center; margin-top: 25px; margin-bottom: 25px;">
+                    <a href="{{login_url}}" class="login-button">Log In to Your Account</a>
+                </p>
+                <p>If you were not expecting this email, please disregard it.</p>
+                <p>Thank you,<br>The Staffing Tool Team</p>
+            </div>
+            <div class="footer">
+                <p>&copy; 2024 Your Company. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

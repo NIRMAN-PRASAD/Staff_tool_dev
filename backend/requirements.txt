@@ -1,0 +1,33 @@
+# FastAPI and Web Server
+fastapi
+uvicorn[standard]
+
+# Database ORM and PostgreSQL Driver
+sqlalchemy
+psycopg2-binary
+
+# Environment Variable Management
+python-dotenv
+
+# Pydantic for data validation
+pydantic[email]
+
+# Resume Parsing
+PyPDF2
+python-docx
+
+# Google Gemini AI Client
+google-generativeai
+
+# --- NEW for Authentication & OTP ---
+# Password Hashing
+passlib[bcrypt]
+
+# JWT Token Management
+python-jose
+
+# For sending emails with HTML content
+python-multipart
+
+# For rendering HTML email templates
+Jinja2

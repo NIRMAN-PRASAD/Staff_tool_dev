@@ -1,6 +1,6 @@
 # backend/app/api/jobs.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -15,7 +15,7 @@ from app.database.models import (
 )
 from app.schemas import job_schema, candidate_schema
 from app.api.dependencies import get_db, get_current_active_user
-from app.services import gemini_service
+from app.services import gemini_service, resume_parser_service
 
 router = APIRouter(
     prefix="/jobs",
@@ -35,31 +35,21 @@ def create_job(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
 
     try:
-        # Step 1: Create the main JobPosting object from the request data
         job_data = job.model_dump(exclude={"required_skills", "interview_stages"})
         db_job = job_model.JobPosting(**job_data, CreatedBy=current_user.UserID)
         db.add(db_job)
-        db.flush()  # Flush to get the JobID for linking relationships
+        db.flush()
 
-        # Step 2: Process and link required skills
         if job.required_skills:
-            # Use a set to handle unique skill names, formatted consistently
             skill_names = set(s.strip().title() for s in job.required_skills if s.strip())
-            
             for skill_name in skill_names:
-                # Find if the skill already exists (case-insensitive search)
                 db_skill = db.query(skill_model.Skill).filter(skill_model.Skill.SkillName.ilike(skill_name)).first()
-                
-                # If skill doesn't exist, create it
                 if not db_skill:
                     db_skill = skill_model.Skill(SkillName=skill_name, CreatedBy=current_user.UserID)
                     db.add(db_skill)
-                    db.flush() # Flush to get the new SkillID before appending
-                
-                # Append the skill object to the job's relationship
+                    db.flush()
                 db_job.required_skills.append(db_skill)
         
-        # Step 3: Create and link the custom interview stage templates
         if job.interview_stages:
             for stage_data in job.interview_stages:
                 db_stage = wf_model.InterviewStageTemplate(
@@ -75,7 +65,6 @@ def create_job(
         return db_job
     except Exception as e:
         db.rollback()
-        # Provide a more specific error for debugging
         print(f"Error creating job: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create job: An internal error occurred.")
 
@@ -101,9 +90,42 @@ def generate_jd_with_ai(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/parse-jd", response_model=Dict[str, str])
+async def parse_jd_from_file(
+    file: UploadFile = File(...),
+    current_user: user_model.User = Depends(get_current_active_user)
+):
+    """
+    Parses a JD from an uploaded file (PDF or DOCX) and returns the text.
+    """
+    if current_user.Role not in ["Admin", "HR"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
+    
+    try:
+        content = await file.read()
+        text = resume_parser_service.extract_text(content, file.filename)
+        return {"description": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse file: {str(e)}")
+
+
 @router.get("/", response_model=List[job_schema.Job])
-def read_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: user_model.User = Depends(get_current_active_user)):
-    jobs = db.query(job_model.JobPosting).offset(skip).limit(limit).all()
+def read_jobs(
+    department_id: Optional[int] = None,
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db), 
+    current_user: user_model.User = Depends(get_current_active_user)
+):
+    """
+    Retrieves a list of jobs. Can be filtered by department_id.
+    """
+    query = db.query(job_model.JobPosting)
+
+    if department_id is not None:
+        query = query.filter(job_model.JobPosting.DepartmentID == department_id)
+
+    jobs = query.offset(skip).limit(limit).all()
     return jobs
 
 
@@ -113,6 +135,7 @@ def read_job(job_id: int, db: Session = Depends(get_db), current_user: user_mode
     if db_job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     return db_job
+
 
 @router.get("/{job_id}/applications", response_model=List[candidate_schema.JobApplication])
 def read_applications_for_job(job_id: int, stage: Optional[str] = None, db: Session = Depends(get_db), current_user: user_model.User = Depends(get_current_active_user)):

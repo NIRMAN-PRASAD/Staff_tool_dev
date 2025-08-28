@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+// frontend/src/pages/AuthPage.jsx
+
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-// <-- YAHAN CHANGE HUA HAI -->
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function AuthPage() {
-    const { login } = useAuth();
+    const { login, user } = useAuth();
+    const navigate = useNavigate();
+    
     const [loginStep, setLoginStep] = useState(1);
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        console.log('[AuthPage] useEffect triggered because user changed to:', user);
+        if (user) {
+            console.log('[AuthPage] User object exists, NAVIGATING to /dashboard');
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
+
 
     const handleRequestOtp = async (event) => {
         event.preventDefault();
@@ -22,7 +35,7 @@ function AuthPage() {
             setMessage(response.data.message);
             setLoginStep(2);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Failed to request OTP. Make sure the backend server is running.');
+            setError(err.response?.data?.detail || 'Failed to request OTP.');
         } finally {
             setIsLoading(false);
         }
@@ -30,14 +43,20 @@ function AuthPage() {
 
     const handleVerifyOtp = async (event) => {
         event.preventDefault();
-        setIsLoading(true); setError('');
+        setIsLoading(true); 
+        setError('');
         try {
+            console.log('[AuthPage] Attempting to verify OTP for email:', email);
             const response = await axios.post(`${API_URL}/users/login/verify-otp`, { email, otp });
+            
             const receivedToken = response.data.access_token;
-            login(receivedToken);
+            console.log('[AuthPage] Successfully received token from backend:', receivedToken);
+            
+            console.log('[AuthPage] Calling login function from context...');
+            login(receivedToken); 
         } catch (err) {
-            setError(err.response?.data?.detail || 'Login failed! The OTP might be incorrect or expired.');
-        } finally {
+            console.error('[AuthPage] ERROR verifying OTP:', err);
+            setError(err.response?.data?.detail || 'Login failed!');
             setIsLoading(false);
         }
     };

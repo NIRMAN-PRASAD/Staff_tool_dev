@@ -1,3 +1,4 @@
+# backend/app/database/models/portfolio_department.py
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Text, ForeignKey, text
 from sqlalchemy.orm import relationship
 from app.database.base import Base

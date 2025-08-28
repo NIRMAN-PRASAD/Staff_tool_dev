@@ -1,3 +1,4 @@
+# backend/app/services/notification_service.py
 import os
 import random
 import smtplib

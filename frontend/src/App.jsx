@@ -21,19 +21,24 @@ import CandidatePipelinePage from './pages/CandidatePipelinePage.jsx';
 
 const PrivateRoute = ({ children, requiredRole }) => {
     const { user, authToken } = useAuth();
+    
+    // --- THIS IS THE DEBUG LOG ---
+    console.log('[PrivateRoute] Checking auth. Token:', authToken, 'User:', user);
+
     if (!authToken || !user) {
+        console.log('[PrivateRoute] Auth check FAILED. Redirecting to /login');
         return <Navigate to="/login" />;
     }
 
     const userRole = user.role.toUpperCase();
     
-    // An Admin can access any route, even those specifically for HR
     if (userRole === 'ADMIN') {
+        console.log('[PrivateRoute] User is ADMIN. Access granted.');
         return children;
     }
     
-    // For other roles, check if the role matches
     if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+        console.log(`[PrivateRoute] Auth check FAILED. Required role: ${requiredRole}, User role: ${userRole}`);
         return (
             <div style={{ textAlign: 'center', padding: '50px' }}>
                 <h1>403 - Forbidden</h1>
@@ -43,6 +48,7 @@ const PrivateRoute = ({ children, requiredRole }) => {
         );
     }
     
+    console.log('[PrivateRoute] Auth check PASSED. Rendering children.');
     return children;
 };
 
@@ -68,13 +74,8 @@ function App() {
             path="/admin" 
             element={<PrivateRoute requiredRole="Admin"><AdminLayout /></PrivateRoute>}
           >
-            {/* Default route for /admin will redirect to /admin/users */}
             <Route index element={<Navigate to="users" replace />} /> 
-            
-            {/* Route for the user management table */}
             <Route path="users" element={<UserManagementPage />} /> 
-            
-            {/* Route for the settings page with cards */}
             <Route path="settings" element={<AdminSettingsPage />} /> 
           </Route>
           

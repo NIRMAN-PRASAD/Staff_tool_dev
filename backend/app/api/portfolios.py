@@ -1,5 +1,7 @@
+# backend/app/api/portfolios.py
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload # <--- IMPORT selectinload
 from typing import List
 from datetime import datetime
 
@@ -12,7 +14,7 @@ from app.api.dependencies import get_db, get_current_active_user
 router = APIRouter(
     prefix="/portfolios",
     tags=["Portfolios"],
-    dependencies=[Depends(get_current_active_user)]  # Protect all routes in this file
+    dependencies=[Depends(get_current_active_user)]
 )
 
 @router.post("/", response_model=portfolio_schema.Portfolio, status_code=status.HTTP_201_CREATED)
@@ -25,7 +27,7 @@ def create_portfolio(
     Create a new portfolio company. The user creating it is automatically assigned.
     """
     db_portfolio = portfolio_model.Portfolio(
-        **portfolio.model_dump(exclude_unset=True), # Use exclude_unset=True for flexibility
+        **portfolio.model_dump(exclude_unset=True),
         CreatedBy=current_user.UserID
     )
     db.add(db_portfolio)
@@ -36,25 +38,30 @@ def create_portfolio(
 @router.get("/", response_model=List[portfolio_schema.Portfolio])
 def read_portfolios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
-    Retrieve a list of all portfolios, ordered by name.
+    Retrieve a list of all portfolios, with their associated departments.
     """
-    # <-- YAHAN TYPO THEEK KIYA GAYA HAI -->
-    # 'portfolio_name' (lowercase) ko 'PortfolioName' (CamelCase) kiya gaya hai
-    portfolios = db.query(portfolio_model.Portfolio).order_by(portfolio_model.Portfolio.PortfolioName).offset(skip).limit(limit).all()
+    portfolios = db.query(portfolio_model.Portfolio).options(
+        selectinload(portfolio_model.Portfolio.departments) # <--- THIS IS THE FIX
+    ).order_by(
+        portfolio_model.Portfolio.PortfolioName
+    ).offset(skip).limit(limit).all()
     return portfolios
 
 @router.get("/{portfolio_id}", response_model=portfolio_schema.Portfolio)
 def read_portfolio(portfolio_id: int, db: Session = Depends(get_db)):
     """
-    Retrieve a single portfolio by its ID.
+    Retrieve a single portfolio by its ID, with its associated departments.
     """
-    db_portfolio = db.query(portfolio_model.Portfolio).filter(portfolio_model.Portfolio.PortfolioID == portfolio_id).first()
+    db_portfolio = db.query(portfolio_model.Portfolio).options(
+        selectinload(portfolio_model.Portfolio.departments) # <--- Also good to add it here
+    ).filter(
+        portfolio_model.Portfolio.PortfolioID == portfolio_id
+    ).first()
+
     if db_portfolio is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
     return db_portfolio
 
-# You can add PUT and DELETE endpoints here later if needed
-# Example for PUT:
 @router.put("/{portfolio_id}", response_model=portfolio_schema.Portfolio)
 def update_portfolio(
     portfolio_id: int,

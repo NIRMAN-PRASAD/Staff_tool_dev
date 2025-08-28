@@ -1,3 +1,4 @@
+# backend/app/core/__init__.py
 from pydantic import BaseModel
 
 class AISettingBase(BaseModel):

@@ -1,3 +1,4 @@
+# backend/app/services/gemini_service.py
 import google.generativeai as genai
 import json
 import re

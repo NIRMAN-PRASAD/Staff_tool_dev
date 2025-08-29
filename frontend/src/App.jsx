@@ -3,85 +3,94 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import './App.css';
+import './App.css'; // You can keep this for global styles if needed
 
-// Import Layouts
-import AdminLayout from './components/AdminLayout.jsx';
+// Import the new Master Layout
+import AppLayout from './components/AppLayout.jsx';
 
-// Import Pages
+// Import all your pages
 import AuthPage from './pages/AuthPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
-import UserManagementPage from './pages/UserManagementPage.jsx';
-import AdminSettingsPage from './pages/AdminSettings.jsx';
-import NotFoundPage from './pages/NotFoundPage.jsx';
 import JobManagementPage from './pages/JobManagementPage.jsx';
+import CandidatePipelinePage from './pages/CandidatePipelinePage.jsx'; // Keep this for later
+import AdminSettingsPage from './pages/AdminSettings.jsx';
+import UserManagementPage from './pages/UserManagementPage.jsx';
 import PortfolioManagementPage from './pages/PortfolioManagementPage.jsx';
 import DepartmentManagementPage from './pages/DepartmentManagementPage.jsx';
-import CandidatePipelinePage from './pages/CandidatePipelinePage.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
 
+/**
+ * A wrapper component that handles authentication and authorization.
+ * If the user is authenticated, it wraps the page content with the main AppLayout.
+ * Otherwise, it redirects to the login page.
+ */
 const PrivateRoute = ({ children, requiredRole }) => {
     const { user, authToken } = useAuth();
-    
-    // --- THIS IS THE DEBUG LOG ---
-    console.log('[PrivateRoute] Checking auth. Token:', authToken, 'User:', user);
 
     if (!authToken || !user) {
-        console.log('[PrivateRoute] Auth check FAILED. Redirecting to /login');
         return <Navigate to="/login" />;
     }
 
-    const userRole = user.role.toUpperCase();
-    
-    if (userRole === 'ADMIN') {
-        console.log('[PrivateRoute] User is ADMIN. Access granted.');
-        return children;
+    // Optional: Role-based access control
+    if (requiredRole && user.role !== requiredRole) {
+        // You can redirect to a dedicated "403 Forbidden" page if you want
+        return <Navigate to="/dashboard" />;
     }
-    
-    if (requiredRole && userRole !== requiredRole.toUpperCase()) {
-        console.log(`[PrivateRoute] Auth check FAILED. Required role: ${requiredRole}, User role: ${userRole}`);
-        return (
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-                <h1>403 - Forbidden</h1>
-                <p>You do not have permission to access this page.</p>
-                <a href="/dashboard">Go back to Dashboard</a>
-            </div>
-        );
-    }
-    
-    console.log('[PrivateRoute] Auth check PASSED. Rendering children.');
-    return children;
+
+    // If authorized, render the page inside the main layout
+    return <AppLayout>{children}</AppLayout>;
 };
+
 
 function App() {
   const { authToken } = useAuth();
   
   return (
     <div className="App">
-      <main>
         <Routes>
+          {/* Public Route: Does NOT use the AppLayout */}
           <Route path="/login" element={<AuthPage />} />
+
+          {/* Redirect root path */}
           <Route path="/" element={authToken ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
 
-          {/* Standard Protected Routes */}
-          <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-          <Route path="/manage-jobs" element={<PrivateRoute requiredRole="HR"><JobManagementPage /></PrivateRoute>} />
-          <Route path="/manage-portfolios" element={<PrivateRoute requiredRole="Admin"><PortfolioManagementPage /></PrivateRoute>} />
-          <Route path="/manage-departments" element={<PrivateRoute requiredRole="Admin"><DepartmentManagementPage /></PrivateRoute>} />
-          <Route path="/pipeline/:jobId" element={<PrivateRoute><CandidatePipelinePage /></PrivateRoute>} />
+          {/* --- Protected Routes (All routes below will have the header and sidebar) --- */}
           
-          {/* --- ADMIN SECTION with Nested Layout --- */}
-          <Route 
-            path="/admin" 
-            element={<PrivateRoute requiredRole="Admin"><AdminLayout /></PrivateRoute>}
-          >
-            <Route index element={<Navigate to="users" replace />} /> 
-            <Route path="users" element={<UserManagementPage />} /> 
-            <Route path="settings" element={<AdminSettingsPage />} /> 
-          </Route>
+          <Route path="/dashboard" element={
+            <PrivateRoute><DashboardPage /></PrivateRoute>
+          }/>
+
+          <Route path="/manage-jobs" element={
+            <PrivateRoute requiredRole="Admin"><JobManagementPage /></PrivateRoute>
+          }/>
           
+          <Route path="/pipeline/:jobId" element={
+            <PrivateRoute><CandidatePipelinePage /></PrivateRoute>
+          }/>
+
+          <Route path="/manage-portfolios" element={
+            <PrivateRoute requiredRole="Admin"><PortfolioManagementPage /></PrivateRoute>
+          }/>
+          
+          <Route path="/manage-departments" element={
+            <PrivateRoute requiredRole="Admin"><DepartmentManagementPage /></PrivateRoute>
+          }/>
+
+          {/* 
+            NOTE: Your old /admin/ routes are now top-level for simplicity.
+            The `AppLayout` handles the UI, and the routes handle the logic.
+          */}
+          <Route path="/users" element={
+            <PrivateRoute requiredRole="Admin"><UserManagementPage /></PrivateRoute>
+          }/>
+
+          <Route path="/settings" element={
+            <PrivateRoute requiredRole="Admin"><AdminSettingsPage /></PrivateRoute>
+          }/>
+
+          {/* Catch-all route for pages that don't exist */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </main>
     </div>
   );
 }

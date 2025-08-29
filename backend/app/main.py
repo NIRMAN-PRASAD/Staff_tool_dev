@@ -1,9 +1,18 @@
 # backend/app/main.py
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import all your API routers
-from app.api import users, jobs, candidates, departments, portfolios, skills
+from app.api import (
+    users, 
+    jobs, 
+    candidates, 
+    departments, 
+    portfolios, 
+    skills,
+    reports 
+)
 
 app = FastAPI(
     title="Staffing Tool API",
@@ -37,4 +46,5 @@ app.include_router(jobs.router)
 app.include_router(candidates.router)
 app.include_router(departments.router)
 app.include_router(portfolios.router)
-app.include_router(skills.router) # <-- Naya skills router
+app.include_router(skills.router)
+app.include_router(reports.router) # <--- INCLUDE THE NEW ROUTER HERE

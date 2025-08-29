@@ -1,193 +1,162 @@
 // frontend/src/pages/DashboardPage.jsx
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
 import axiosInstance from '../api/axiosInstance';
 
+// MUI Components
+import { Box, Typography, Grid, Card, Button, List, ListItem, ListItemText, Divider, Avatar, IconButton, CircularProgress } from '@mui/material';
+
+// MUI Icons
+import AddIcon from '@mui/icons-material/Add';
+import PageviewOutlinedIcon from '@mui/icons-material/PageviewOutlined';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+
 function DashboardPage() {
-    const { user, authToken, logout } = useAuth();
     const navigate = useNavigate();
-
-    // Data state
-    const [jobs, setJobs] = useState([]); // Will hold the filtered jobs
-    const [portfolios, setPortfolios] = useState([]);
-    
-    // UI State for filtering
-    const [selectedFilter, setSelectedFilter] = useState({ type: 'all', id: null });
-    
+    const [stats, setStats] = useState(null);
+    const [recentJobs, setRecentJobs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
 
-    // Fetch portfolios once on page load
-    useEffect(() => {
-        const fetchPortfolioData = async () => {
-            if (!authToken) return;
-            try {
-                const portfoliosResponse = await axiosInstance.get('/portfolios/');
-                setPortfolios(portfoliosResponse.data);
-            } catch (err) {
-                setError('Failed to fetch portfolio data.');
-            }
-        };
-        fetchPortfolioData();
-    }, [authToken]);
-    
-    // Fetch jobs whenever the filter changes
-    useEffect(() => {
-        const fetchJobs = async () => {
-            if (!authToken) return;
-            setIsLoading(true);
-            
-            let url = '/jobs/';
-            if (selectedFilter.type === 'department' && selectedFilter.id) {
-                url = `/jobs/?department_id=${selectedFilter.id}`;
-            }
-            
-            try {
-                const jobsResponse = await axiosInstance.get(url);
-                setJobs(jobsResponse.data);
-            } catch (err) {
-                 setError('Failed to fetch job data.');
-                 console.error("Fetch jobs error:", err.response ? err.response.data : err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        
-        fetchJobs();
-    }, [authToken, selectedFilter]); // Re-run effect when filter changes
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [statsRes, jobsRes] = await Promise.all([
+                axiosInstance.get('/reports/dashboard-stats'),
+                axiosInstance.get('/jobs/?limit=5')
+            ]);
+            setStats(statsRes.data);
+            setRecentJobs(jobsRes.data);
+        } catch (error) {
+            console.error("Failed to fetch dashboard data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
-    // Grouping logic for the sidebar UI
-    const sidebarData = useMemo(() => {
-        const data = {};
-        portfolios.forEach(portfolio => {
-            portfolio.departments.forEach(dept => {
-                if (!data[dept.DepartmentName]) {
-                    data[dept.DepartmentName] = { id: dept.DepartmentID, portfolios: [] };
-                }
-                data[dept.DepartmentName].portfolios.push(portfolio.PortfolioName);
-            });
-        });
-        return data;
-    }, [portfolios]);
-    
-    const Sidebar = () => (
-        <nav style={styles.sidebar}>
-            <h2>Filter by</h2>
-            <div
-                style={selectedFilter.type === 'all' ? styles.sidebarItemActive : styles.sidebarItem}
-                onClick={() => setSelectedFilter({ type: 'all', id: null })}
-            >
-                All Jobs
-            </div>
-            <hr style={styles.hr}/>
-            {Object.entries(sidebarData).map(([deptName, deptInfo]) => (
-                <div key={deptInfo.id}>
-                    {/* Department name is now clickable */}
-                    <h4 
-                        style={selectedFilter.type === 'department' && selectedFilter.id === deptInfo.id ? styles.deptHeaderActive : styles.deptHeader}
-                        onClick={() => setSelectedFilter({ type: 'department', id: deptInfo.id })}
-                    >
-                        {deptName}
-                    </h4>
-                    {/* Portfolios are just informational labels */}
-                    {deptInfo.portfolios.map(pName => (
-                        <div key={pName} style={styles.portfolioLabel}>
-                            - {pName}
-                        </div>
-                    ))}
-                </div>
-            ))}
-        </nav>
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const StatCard = ({ title, value, percentage }) => (
+        <Grid item xs={12} sm={6} lg={3}>
+            <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#e0e0e0' }}>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="body2" color="text.secondary">{title}</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', my: 1 }}>{value}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#dcfce7' }} />
+                        <Typography variant="caption" color="text.secondary">{percentage}</Typography>
+                    </Box>
+                </Box>
+            </Card>
+        </Grid>
     );
 
-    const MainContent = () => {
-        const userRole = user?.role ? user.role.toUpperCase() : '';
-        return (
-            <main style={styles.mainContent}>
-                <header style={styles.header}>
-                    <h1>Dashboard</h1>
-                    <div>
-                         {userRole === 'ADMIN' && (
-                            <button onClick={() => navigate('/admin/settings')} style={{...styles.button, ...styles.adminButton}}>
-                                Admin Panel
-                            </button>
-                        )}
-                        {(userRole === 'HR' || userRole === 'ADMIN') && (
-                            <button onClick={() => navigate('/manage-jobs')} style={{...styles.button, ...styles.hrButton}}>
-                                Create Job
-                            </button>
-                        )}
-                        <button onClick={logout} style={{...styles.button, ...styles.logoutButton}}>Logout</button>
-                    </div>
-                </header>
-                <div style={styles.welcomeMessage}>
-                    Welcome, <strong>{user?.email}</strong>! (Role: {user?.role})
-                </div>
-                <h2>Active Job Postings</h2>
-                {isLoading ? (
-                    <p>Loading jobs...</p>
-                ) : error ? (
-                    <p style={styles.error}>{error}</p>
-                ) : (
-                    <div style={styles.jobList}>
-                        {jobs.length > 0 ? (
-                            jobs.map(job => (
-                                <div 
-                                    key={job.JobID} 
-                                    style={styles.jobCard}
-                                    onClick={() => navigate(`/pipeline/${job.JobID}`)}
-                                >
-                                    <h3>{job.JobTitle}</h3>
-                                    <p>Status: <span style={{...styles.status, backgroundColor: job.Status === 'Open' ? '#28a745' : '#6c757d'}}>{job.Status}</span></p>
-                                </div>
-                            ))
-                        ) : (
-                            <p>No active job postings found for this filter.</p>
-                        )}
-                    </div>
-                )}
-            </main>
-        );
-    };
+    const ActionCard = ({ title, icon, onClick }) => (
+        <Grid item xs={12} sm={6} lg={4}>
+            <Button
+                fullWidth
+                variant="outlined"
+                onClick={onClick}
+                startIcon={icon}
+                sx={{
+                    justifyContent: 'flex-start',
+                    p: 2,
+                    borderRadius: 3,
+                    borderColor: '#e0e0e0',
+                    color: 'text.primary',
+                    bgcolor: 'white', // Ensure background is white
+                    textTransform: 'none',
+                    // --- HOVER EFFECT FIX ---
+                    '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'white', // Keep background white on hover
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3,
+                    },
+                    '& .MuiButton-startIcon': {
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        p: 1,
+                        borderRadius: 2,
+                        mr: 1.5,
+                    }
+                }}
+            >
+                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>{title}</Typography>
+            </Button>
+        </Grid>
+    );
+
+    if (isLoading) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
+    }
 
     return (
-        <div style={styles.container}>
-            <Sidebar />
-            <MainContent />
-        </div>
+        <Box>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>Dashboard</Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Welcome back! Here’s your recruitment overview.
+            </Typography>
+
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                {stats && <>
+                    <StatCard title="Total Jobs Posted" value={stats.total_jobs_posted} percentage="+12%" />
+                    <StatCard title="Total Candidates" value={stats.total_candidates} percentage="+23%" />
+                    <StatCard title="Active Interviewers" value={stats.active_interviewers} percentage="+5%" />
+                    <StatCard title="Selected Candidates" value={stats.selected_candidates} percentage="+8%" />
+                </>}
+            </Grid>
+
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <ActionCard title="Create New Job" icon={<AddIcon />} onClick={() => navigate('/manage-jobs')} />
+                <ActionCard title="Screen Resumes" icon={<PageviewOutlinedIcon />} onClick={() => navigate('/screening')} />
+                <ActionCard title="Schedule Interviews" icon={<EventAvailableIcon />} />
+            </Grid>
+
+            <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Recent Jobs</Typography>
+                    <Button variant="outlined" sx={{ borderRadius: 2 }}>View All Jobs</Button>
+                </Box>
+                <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#e0e0e0', bgcolor: 'white' }}>
+                    <List sx={{ p: 0 }}>
+                        {recentJobs.map((job, index) => (
+                            <React.Fragment key={job.JobID}>
+                                <ListItem
+                                    onClick={() => navigate(`/pipeline/${job.JobID}`)}
+                                    sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' }, py: 2 }}
+                                    secondaryAction={
+                                        <Box>
+                                            <IconButton><VisibilityOutlinedIcon /></IconButton>
+                                            <IconButton><MoreHorizIcon /></IconButton>
+                                        </Box>
+                                    }
+                                >
+                                    <ListItemText
+                                        primary={job.JobTitle}
+                                        secondary={
+                                            <Box component="span" sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mt: 0.5 }}>
+                                                <Typography component="span" variant="body2" color="text.secondary">Concertiv</Typography>•
+                                                <Typography component="span" variant="body2" color="text.secondary">{job.JobType || 'Full Time'}</Typography>•
+                                                <Typography component="span" variant="body2" color="text.secondary">45 applicants</Typography>•
+                                                <Typography component="span" variant="body2" color="text.secondary">2 days ago</Typography>
+                                            </Box>
+                                        }
+                                        primaryTypographyProps={{ fontWeight: 'medium', fontSize: '1.1rem' }}
+                                    />
+                                </ListItem>
+                                {index < recentJobs.length - 1 && <Divider />}
+                            </React.Fragment>
+                        ))}
+                    </List>
+                </Card>
+            </Box>
+        </Box>
     );
 }
-
-const styles = {
-    container: { display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif' },
-    sidebar: {
-        width: '240px',
-        backgroundColor: '#f8f9fa',
-        padding: '20px',
-        borderRight: '1px solid #dee2e6',
-        height: '100vh',
-        overflowY: 'auto',
-        flexShrink: 0
-    },
-    sidebarItem: { padding: '10px 15px', cursor: 'pointer', borderRadius: '5px', marginBottom: '5px', fontWeight: '500' },
-    sidebarItemActive: { padding: '10px 15px', cursor: 'pointer', borderRadius: '5px', marginBottom: '5px', backgroundColor: '#007bff', color: 'white', fontWeight: 'bold' },
-    deptHeader: { marginTop: '20px', marginBottom: '5px', padding: '8px 15px', fontSize: '14px', color: '#343a40', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer', borderRadius: '5px', transition: 'background-color 0.2s' },
-    deptHeaderActive: { marginTop: '20px', marginBottom: '5px', padding: '8px 15px', fontSize: '14px', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer', borderRadius: '5px', backgroundColor: '#6c757d', color: 'white' },
-    portfolioLabel: { paddingLeft: '25px', fontSize: '14px', color: '#6c757d', marginBottom: '5px' },
-    hr: { border: 'none', borderTop: '1px solid #dee2e6', margin: '10px 0' },
-    mainContent: { flex: 1, padding: '20px 40px', overflowY: 'auto' },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', paddingBottom: '10px', marginBottom: '20px' },
-    welcomeMessage: { padding: '15px', backgroundColor: '#eef5ff', borderRadius: '8px', margin: '20px 0', textAlign: 'center' },
-    jobList: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' },
-    jobCard: { border: '1px solid #ddd', borderRadius: '8px', padding: '20px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' },
-    status: { color: 'white', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' },
-    button: { padding: '8px 15px', fontSize: '14px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '10px' },
-    adminButton: { backgroundColor: '#ffc107', color: 'black' },
-    hrButton: { backgroundColor: '#17a2b8' },
-    logoutButton: { backgroundColor: '#dc3545' },
-    error: { color: 'red' },
-};
 
 export default DashboardPage;

@@ -1,11 +1,14 @@
 // frontend/src/pages/AuthPage.jsx
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import axiosInstance from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// MUI Components
+import { Container, Box, Typography, TextField, Button, Paper, Avatar, Link, CircularProgress, Alert } from '@mui/material';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 function AuthPage() {
     const { login, user } = useAuth();
@@ -13,90 +16,146 @@ function AuthPage() {
     
     const [loginStep, setLoginStep] = useState(1);
     const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState('');
+    const [otp, setOtp] = useState(new Array(6).fill(""));
     const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    const inputRefs = useRef([]);
 
     useEffect(() => {
-        console.log('[AuthPage] useEffect triggered because user changed to:', user);
         if (user) {
-            console.log('[AuthPage] User object exists, NAVIGATING to /dashboard');
             navigate('/dashboard');
         }
     }, [user, navigate]);
 
-
-    const handleRequestOtp = async (event) => {
-        event.preventDefault();
-        setIsLoading(true); setError(''); setMessage('');
+    const handleRequestOtp = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
         try {
-            const response = await axios.post(`${API_URL}/users/login/request-otp`, { email });
-            setMessage(response.data.message);
+            await axiosInstance.post('/users/login/request-otp', { email });
             setLoginStep(2);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Failed to request OTP.');
+            setError(err.response?.data?.detail || 'Failed to request OTP. Please check the email and try again.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleVerifyOtp = async (event) => {
-        event.preventDefault();
-        setIsLoading(true); 
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
         setError('');
+        const finalOtp = otp.join('');
+        if (finalOtp.length !== 6) {
+            setError('Please enter the complete 6-digit code.');
+            setIsLoading(false);
+            return;
+        }
         try {
-            console.log('[AuthPage] Attempting to verify OTP for email:', email);
-            const response = await axios.post(`${API_URL}/users/login/verify-otp`, { email, otp });
-            
-            const receivedToken = response.data.access_token;
-            console.log('[AuthPage] Successfully received token from backend:', receivedToken);
-            
-            console.log('[AuthPage] Calling login function from context...');
-            login(receivedToken); 
+            const response = await axiosInstance.post('/users/login/verify-otp', { email, otp: finalOtp });
+            login(response.data.access_token);
         } catch (err) {
-            console.error('[AuthPage] ERROR verifying OTP:', err);
-            setError(err.response?.data?.detail || 'Login failed!');
+            setError(err.response?.data?.detail || 'Invalid OTP or session expired.');
             setIsLoading(false);
         }
     };
 
-    if (loginStep === 1) {
-        return (
-            <div style={styles.container}>
-                <h2>Login to Staffing Tool</h2>
-                <p>Please enter your email to receive a login code.</p>
-                <form onSubmit={handleRequestOtp} style={styles.form}>
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={styles.input} />
-                    <button type="submit" disabled={isLoading} style={styles.button}>{isLoading ? 'Sending...' : 'Send OTP'}</button>
-                    {error && <p style={styles.error}>{error}</p>}
-                </form>
-            </div>
-        );
-    }
+    const handleOtpChange = (element, index) => {
+        if (isNaN(element.value)) return;
+        setOtp([...otp.map((d, idx) => (idx === index ? element.value : d))]);
+        if (element.nextSibling && element.value) {
+            element.nextSibling.focus();
+        }
+    };
+
+    const handleKeyDown = (e, index) => {
+        if (e.key === "Backspace" && !otp[index] && e.target.previousSibling) {
+            e.target.previousSibling.focus();
+        }
+    };
+
+    const Header = () => (
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Avatar sx={{ m: 1, bgcolor: 'secondary.main', width: 56, height: 56 }} />
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>VeHIRE</Typography>
+            <Typography variant="body2" color="text.secondary">AI Powered Recruitment</Typography>
+        </Box>
+    );
 
     return (
-        <div style={styles.container}>
-            <h2>Enter Verification Code</h2>
-            <p style={styles.message}>{message}</p>
-            <form onSubmit={handleVerifyOtp} style={styles.form}>
-                <input type="text" placeholder="6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength="6" style={styles.input} />
-                <button type="submit" disabled={isLoading} style={styles.button}>{isLoading ? 'Verifying...' : 'Login'}</button>
-                {error && <p style={styles.error}>{error}</p>}
-                <button type="button" onClick={() => { setLoginStep(1); setError(''); }} style={styles.backButton}>Back to email</button>
-            </form>
-        </div>
+        <Container component="main" maxWidth="xs" sx={{ backgroundColor: 'background.default', height: '100vh', display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Header />
+                <Paper elevation={0} sx={{ p: 4, width: '100%', bgcolor: 'secondary.main' }}>
+                    {loginStep === 1 ? (
+                        <Box component="form" onSubmit={handleRequestOtp}>
+                            <Typography variant="h5" align="center" sx={{ mb: 1, fontWeight: 'medium' }}>Welcome</Typography>
+                            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                                Enter your email to receive a verification code
+                            </Typography>
+                            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="email"
+                                label="Email Address"
+                                name="email"
+                                autoComplete="email"
+                                autoFocus
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                InputProps={{
+                                    startAdornment: <EmailOutlinedIcon color="action" sx={{ mr: 1 }} />,
+                                    sx: { bgcolor: 'white' }
+                                }}
+                            />
+                            <Button type="submit" fullWidth variant="contained" color="primary" disabled={isLoading} sx={{ mt: 3, mb: 2, py: 1.5 }}>
+                                {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Get Verification Code'}
+                            </Button>
+                        </Box>
+                    ) : (
+                        <Box component="form" onSubmit={handleVerifyOtp}>
+                            <Typography variant="h5" align="center" sx={{ mb: 1, fontWeight: 'medium' }}>Verify Your Email</Typography>
+                            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                                We've sent a 6-digit code to <br /> <strong>{email}</strong>
+                            </Typography>
+                            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 3 }}>
+                                {otp.map((data, index) => (
+                                    <TextField
+                                        key={index}
+                                        value={data}
+                                        onChange={e => handleOtpChange(e.target, index)}
+                                        onKeyDown={e => handleKeyDown(e, index)}
+                                        onFocus={e => e.target.select()}
+                                        inputRef={el => (inputRefs.current[index] = el)}
+                                        required
+                                        inputProps={{ maxLength: 1, style: { textAlign: 'center' } }}
+                                        sx={{ width: 50,heigth : 50, bgcolor: 'white', borderRadius: 1 }}
+                                    />
+                                ))}
+                            </Box>
+                            <Button type="submit" fullWidth variant="contained" color="primary" disabled={isLoading} sx={{ mt: 3, mb: 2, py: 1.5 }}>
+                                {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Verify & Continue'}
+                            </Button>
+                        </Box>
+                    )}
+                </Paper>
+                {loginStep === 2 && (
+                    <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => { setLoginStep(1); setError(''); }}
+                        sx={{ mt: 3, display: 'flex', alignItems: 'center', color: 'text.secondary', textDecoration: 'none' }}
+                    >
+                        <ArrowBackIcon sx={{ mr: 0.5, fontSize: '1rem' }} /> Back to Login
+                    </Link>
+                )}
+            </Box>
+        </Container>
     );
 }
-
-const styles = {
-    container: { maxWidth: '400px', margin: '100px auto', padding: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '8px', backgroundColor: 'white' },
-    form: { display: 'flex', flexDirection: 'column', gap: '15px' },
-    input: { padding: '12px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ccc' },
-    button: { padding: '12px', fontSize: '16px', color: 'white', backgroundColor: '#007BFF', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-    backButton: { background: 'none', border: 'none', color: '#007BFF', cursor: 'pointer', marginTop: '10px' },
-    error: { color: 'red', textAlign: 'center', fontWeight: 'bold' },
-    message: { color: 'green', textAlign: 'center' },
-};
 
 export default AuthPage;

@@ -137,12 +137,14 @@ function DashboardPage() {
                                 <div 
                                     key={job.JobID} 
                                     style={styles.jobCard}
-                                    onClick={() => navigate(`/pipeline/${job.JobID}`)}
+        // --- THIS IS THE LINE TO CHANGE ---
+                                    onClick={() => navigate(`/pipeline/${job.JobID}`)} 
                                 >
                                     <h3>{job.JobTitle}</h3>
-                                    <p>Status: <span style={{...styles.status, backgroundColor: job.Status === 'Open' ? '#28a745' : '#6c757d'}}>{job.Status}</span></p>
-                                </div>
-                            ))
+                                    <p>Status: <span style={{...styles.status, backgroundColor: job.Status === 'Open' ? '#28a745' : '#6c757d'}}>{job.Status}
+                                </span></p>
+                            </div>
+                        ))
                         ) : (
                             <p>No active job postings found for this filter.</p>
                         )}

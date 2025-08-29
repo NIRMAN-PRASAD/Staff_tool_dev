@@ -37,4 +37,5 @@ app.include_router(jobs.router)
 app.include_router(candidates.router)
 app.include_router(departments.router)
 app.include_router(portfolios.router)
-app.include_router(skills.router) # <-- Naya skills router
+app.include_router(skills.router) 
+app.include_router(candidates.router)

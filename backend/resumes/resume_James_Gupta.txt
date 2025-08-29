@@ -1,0 +1,38 @@
+James Gupta
+james.gupta@example.com
+(223) 134-8938
+LinkedIn: linkedin.com/in/james-gupta727
+
+Summary
+Machine Learning Engineer with 10 years of experience in designing and deploying scalable AI models. Proficient in Python, TensorFlow, and Deep Learning. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- Python
+- TensorFlow
+- Deep Learning
+- NLP
+- Scikit-learn
+
+Experience
+AI Innovations, Machine Learning Engineer
+Jan 2021 - Dec 2024
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Built a convolutional neural network for image classification using PyTorch.
+- Collaborated with cross-functional teams to integrate models into production.
+
+IntelliTech, Data Scientist
+Jun 2015 - Dec 2018
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+UC Berkeley, M.S. in Computer Science
+2018 - 2014
+
+Projects
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty

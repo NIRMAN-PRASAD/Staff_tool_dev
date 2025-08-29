@@ -1,8 +1,9 @@
 # backend/app/services/gemini_service.py
+
 import google.generativeai as genai
 import json
 import re
-from typing import List
+from typing import List, Dict
 from app.core.config import GEMINI_API_KEY
 
 # Configure the Gemini API client
@@ -17,10 +18,12 @@ def _clean_and_parse_json(response_text: str) -> dict:
     """
     A helper function to clean markdown backticks from AI response and parse JSON.
     """
+    # This regex is robust and finds a JSON block even with surrounding text
     json_match = re.search(r'```json\s*(\{.*?\})\s*```', response_text, re.DOTALL)
     if json_match:
         json_string = json_match.group(1)
     else:
+        # If no markdown backticks, assume the whole text is the JSON string
         json_string = response_text
 
     try:
@@ -64,7 +67,9 @@ def analyze_resume_with_job_desc(resume_text: str, job_description: str) -> dict
     except Exception as e:
         raise ConnectionError(f"An error occurred with the Gemini API: {e}")
 
-def generate_job_description(title: str, skills: List[str], experience: str) -> dict:
+
+# --- THIS IS THE MISSING FUNCTION ---
+def generate_job_description(title: str, skills: List[str], experience: str) -> Dict[str, str]:
     """
     Generates a job description using AI based on provided details.
     """
@@ -98,3 +103,38 @@ def generate_job_description(title: str, skills: List[str], experience: str) -> 
         return _clean_and_parse_json(response.text)
     except Exception as e:
         raise ConnectionError(f"An error occurred during JD generation: {e}")
+
+
+def get_ai_insights(resume_summary: str, job_description: str) -> dict:
+    """
+    Calls Gemini to generate strengths, weaknesses, and interview questions
+    for a candidate based on their resume summary and a job description.
+    """
+    if model is None:
+        raise ConnectionError("Gemini AI model is not configured.")
+
+    prompt = f"""
+    Act as a senior technical recruiter providing a hiring manager with a quick screening report.
+    Analyze the candidate's skills summary against the job description.
+    Your response must be a single, valid JSON object and nothing else.
+    
+    The JSON object must have the following keys:
+    - "summary": A 2-3 sentence summary of the candidate's fit for the role.
+    - "strengths": An array of strings, listing 3-4 key strengths.
+    - "weaknesses": An array of strings, listing 1-2 potential weaknesses or areas to probe.
+    - "interview_questions": An array of strings, providing 3 insightful interview questions to ask this candidate.
+
+    --- JOB DESCRIPTION ---
+    {job_description}
+
+    --- CANDIDATE'S SKILLS SUMMARY ---
+    {resume_summary}
+    
+    --- JSON OUTPUT ---
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return _clean_and_parse_json(response.text)
+    except Exception as e:
+        raise ConnectionError(f"An error occurred with the Gemini API for insights: {e}")

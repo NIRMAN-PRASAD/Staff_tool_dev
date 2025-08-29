@@ -1,4 +1,4 @@
-# seed_db.py
+# In backend/seed_db.py
 
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -6,22 +6,13 @@ from datetime import datetime
 from app.database.session import SessionLocal, engine
 from app.database.base import Base
 
-# --- Correct Import Order ---
-from app.database.models.user import User
-from app.database.models.skill import Skill
-from app.database.models.portfolio_department import Department, Portfolio
-from app.database.models.job import JobPosting
-from app.database.models.candidate import Candidate, CandidateSkill, JobApplication
-from app.database.models.workflow_feedback import (
-    FeedbackTemplate, InterviewPanel, InterviewPanelMember, 
-    InterviewWorkflow, ApplicationStageLog, InterviewFeedback
-)
-
+# Import all your models
+from app.database.models import user, portfolio_department, skill, job, candidate, workflow_feedback
 
 def seed_database():
     """
     Resets the database and populates it with a complete set of test data,
-    including a sample candidate and application.
+    perfect for testing the Job Details page.
     """
     db: Session = SessionLocal()
 
@@ -33,62 +24,72 @@ def seed_database():
 
         print("\n--- Seeding Data ---")
 
-        # 1. Create Users
-        user1 = User(UserName="Admin User", Email="admin@example.com", Role="Admin")
-        user2 = User(UserName="Recruiter Sam", Email="sam@example.com", Role="Recruiter")
-        db.add_all([user1, user2])
+        # 1. Create a User
+        admin_user = user.User(UserName="Admin User", Email="admin@example.com", Role="Admin")
+        db.add(admin_user)
         db.commit()
-        print(f"Created {db.query(User).count()} users.")
 
-        # 2. Create Departments
-        dept1 = Department(DepartmentName="Engineering", CreatedBy=user1.UserID)
+        # 2. Create Portfolio and Department
+        portfolio1 = portfolio_department.Portfolio(PortfolioName="Concertiv", CreatedBy=admin_user.UserID)
+        db.add(portfolio1)
+        db.commit()
+
+        dept1 = portfolio_department.Department(DepartmentName="Engineering", PortfolioID=portfolio1.PortfolioID, CreatedBy=admin_user.UserID)
         db.add(dept1)
         db.commit()
-        print(f"Created {db.query(Department).count()} departments.")
-
-        # 3. Create Portfolios
-        port1 = Portfolio(PortfolioName="Cloud Services", DepartmentID=dept1.DepartmentID, CreatedBy=user1.UserID)
-        db.add(port1)
+        
+        # 3. Create Skills to be linked to the job
+        skill_react = skill.Skill(SkillName="React", CreatedBy=admin_user.UserID)
+        skill_ts = skill.Skill(SkillName="TypeScript", CreatedBy=admin_user.UserID)
+        skill_gql = skill.Skill(SkillName="GraphQL", CreatedBy=admin_user.UserID)
+        db.add_all([skill_react, skill_ts, skill_gql])
         db.commit()
-        print(f"Created {db.query(Portfolio).count()} portfolios.")
 
-        # 4. Create Jobs
-        job1 = JobPosting(JobTitle="AI Engineer", Description="Seeking a talented AI Engineer...", DepartmentID=dept1.DepartmentID, PortfolioID=port1.PortfolioID, Status="Open", CreatedBy=user2.UserID)
+        # 4. Create a comprehensive JobPosting (THIS IS THE KEY CHANGE)
+        job1 = job.JobPosting(
+            JobTitle="Senior Frontend Developer", 
+            Description="Seeking a talented Senior Frontend Developer to join our team...", 
+            DepartmentID=dept1.DepartmentID, 
+            PortfolioID=portfolio1.PortfolioID, 
+            Status="Open", 
+            CreatedBy=admin_user.UserID,
+            JobType="Full-Time", # <-- ADDED THIS
+            Location="San Francisco, CA" # <-- ADDED THIS
+        )
+        # Link skills to the job
+        job1.required_skills.extend([skill_react, skill_ts, skill_gql])
         db.add(job1)
-        db.commit()
-        print(f"Created {db.query(JobPosting).count()} jobs.")
+        db.commit() # Commit to get JobID for the next steps
+        print(f"Created Job with ID: {job1.JobID}")
         
-        # 5. Create Interview Workflow Stage
-        workflow1 = InterviewWorkflow(JobID=job1.JobID, StageName="HR Screening", Sequence=1, CreatedBy=user1.UserID)
-        db.add(workflow1)
+        # 5. Create Interview Stages for the job
+        stage1 = workflow_feedback.InterviewStageTemplate(JobID=job1.JobID, StageName="L1 - Technical Round", InterviewerInfo="John Smith - Senior Engineer", Sequence=1)
+        stage2 = workflow_feedback.InterviewStageTemplate(JobID=job1.JobID, StageName="L2 - System Design", InterviewerInfo="Sarah Johnson - Tech Lead", Sequence=2)
+        db.add_all([stage1, stage2])
         db.commit()
-        print(f"Created {db.query(InterviewWorkflow).count()} workflow stage.")
         
-        # V--- THIS IS THE NEW, CRUCIAL SECTION ---V
-        # 6. Create a sample Candidate and a Job Application
-        print("\n--- Seeding Sample Candidate and Application ---")
-        candidate1 = Candidate(
-            FullName="Jane Doe",
-            Email="jane.doe@example.com",
-            ResumeSummary="Experienced Python developer with a background in machine learning.",
-            TechnicalSkillsSummary="Python, TensorFlow, AWS"
-        )
-        db.add(candidate1)
-        db.commit() # Commit to get the candidate1.CandidateID
-        print(f"Created {db.query(Candidate).count()} candidate.")
+        # 6. Create Candidates and Job Applications with different stages
+        candidates_to_create = [
+            {"name": "Alice Shortlisted", "email": "alice@test.com", "stage": "Shortlisted"},
+            {"name": "Bob Pending", "email": "bob@test.com", "stage": "Pending Review"},
+            {"name": "Charlie Rejected", "email": "charlie@test.com", "stage": "Rejected"},
+            {"name": "Diana Applied", "email": "diana@test.com", "stage": "Applied"},
+        ]
+        
+        for cand_data in candidates_to_create:
+            new_cand = candidate.Candidate(FullName=cand_data["name"], Email=cand_data["email"], CreatedBy=admin_user.UserID)
+            db.add(new_cand)
+            db.commit()
 
-        application1 = JobApplication(
-            CandidateID=candidate1.CandidateID,
-            JobID=job1.JobID,
-            Stage="Applied",
-            MatchScore=85.0,
-            AppliedAt=datetime.utcnow(),
-            CreatedBy=user2.UserID
-        )
-        db.add(application1)
+            new_app = candidate.JobApplication(
+                CandidateID=new_cand.CandidateID,
+                JobID=job1.JobID,
+                Stage=cand_data["stage"],
+                CreatedBy=admin_user.UserID
+            )
+            db.add(new_app)
         db.commit()
-        print(f"Created {db.query(JobApplication).count()} job application with ApplicationID: {application1.ApplicationID}")
-        # --- END OF NEW SECTION ---
+        print(f"Created {len(candidates_to_create)} candidates and applications.")
 
         print("\n--- Seeding Complete ---")
 

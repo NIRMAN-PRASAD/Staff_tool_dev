@@ -1,5 +1,5 @@
 # backend/app/api/dependencies.py
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from app.schemas.user_schema import TokenData
 # This tells FastAPI that the URL to get a token is '/users/login/token'.
 # NOTE: Our actual token URL is `/users/login/verify-otp`, but this `tokenUrl`
 # is mainly for documentation purposes in OpenAPI/Swagger UI.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login/verify-otp")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login/verify-otp", auto_error=False)
 
 
 def get_db():
@@ -27,9 +27,16 @@ def get_db():
         db.close()
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(
+    # The header token is now optional because we might get it from the query
+    token: str = Depends(oauth2_scheme),
+    # This is our fallback for direct links (e.g., downloads)
+    token_query: str = Query(None, alias="token"), 
+    db: Session = Depends(get_db)
+) -> User:
     """
     The core security dependency. It decodes the JWT and returns the user from the DB.
+    It can accept the token from either the "Authorization: Bearer" header or a "token" query parameter.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -37,7 +44,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    payload = security.decode_access_token(token)
+    # --- THIS IS THE NEW LOGIC ---
+    # Prioritize the header token, but use the query parameter as a fallback.
+    final_token = token or token_query
+    
+    # If neither token is present, the user is not authenticated.
+    if final_token is None:
+        raise credentials_exception
+    # --- END OF NEW LOGIC ---
+
+    payload = security.decode_access_token(final_token) # <-- USE THE FINAL TOKEN
     if payload is None:
         raise credentials_exception
     
@@ -47,8 +63,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     
     token_data = TokenData(email=email, role=payload.get("role"))
 
-    # <-- YAHAN CHANGE KIYA GAYA HAI -->
-    # .email (lowercase) se .Email (Capital E) kiya gaya hai to match the DB model
     user = db.query(User).filter(User.Email == token_data.email).first()
     
     if user is None:

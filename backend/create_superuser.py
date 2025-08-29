@@ -27,7 +27,7 @@ def create_initial_admin_user():
 
     # Define the Admin User's Details
     # CHANGE THIS EMAIL to your actual email to receive OTP
-    ADMIN_EMAIL = "nirmanprasad10r@gmail.com"
+    ADMIN_EMAIL = "harsh.pandarathil@vearc.com"
     ADMIN_USERNAME = "Main Admin"
     
     print("\nAttempting to create the initial admin user...")

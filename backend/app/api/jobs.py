@@ -1,7 +1,8 @@
 # backend/app/api/jobs.py
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session , selectinload
+from sqlalchemy import func
 from typing import List, Optional, Dict
 from datetime import datetime
 
@@ -74,19 +75,27 @@ def generate_jd_with_ai(
     request: job_schema.JDGenerationRequest,
     current_user: user_model.User = Depends(get_current_active_user)
 ):
-    """
-    Generates a job description using AI based on a title, skills, and experience.
-    """
     if current_user.Role not in ["Admin", "HR"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied.")
+    
     try:
+        # --- ADD THIS PRINT STATEMENT ---
+        print(f"--- [DEBUG] Calling Gemini for JD generation with title: {request.title} ---")
+        
         result = gemini_service.generate_job_description(
             title=request.title,
             skills=request.skills,
             experience=request.experience
         )
+        
+        # --- ADD THIS PRINT STATEMENT ---
+        print(f"--- [DEBUG] Gemini returned a result: {result} ---")
+        
         return result
     except Exception as e:
+        # --- ADD THIS PRINT STATEMENT ---
+        print(f"--- [DEBUG] An exception occurred in /generate-jd: {e} ---")
+        
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -129,21 +138,81 @@ def read_jobs(
     return jobs
 
 
-@router.get("/{job_id}", response_model=job_schema.Job)
-def read_job(job_id: int, db: Session = Depends(get_db), current_user: user_model.User = Depends(get_current_active_user)):
-    db_job = db.query(job_model.JobPosting).filter(job_model.JobPosting.JobID == job_id).first()
+@router.get("/{job_id}", response_model=job_schema.JobDetails)
+def read_job_details(job_id: int, db: Session = Depends(get_db), current_user: user_model.User = Depends(get_current_active_user)):
+    """
+    Retrieves a detailed overview of a single job, including its pipeline statistics.
+    This endpoint powers the "Job Management" detail view.
+    """
+    # Step 1: Query the job and eagerly load related data to avoid extra DB calls
+    db_job = db.query(job_model.JobPosting).options(
+        selectinload(job_model.JobPosting.department),
+        selectinload(job_model.JobPosting.portfolio),
+        selectinload(job_model.JobPosting.required_skills),
+        selectinload(job_model.JobPosting.interview_stages)
+    ).filter(job_model.JobPosting.JobID == job_id).first()
+
     if db_job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return db_job
+
+    # Step 2: Calculate the candidate pipeline statistics (AC2)
+    stage_counts = db.query(
+        candidate_model.JobApplication.Stage, 
+        func.count(candidate_model.JobApplication.Stage)
+    ).filter(
+        candidate_model.JobApplication.JobID == job_id
+    ).group_by(
+        candidate_model.JobApplication.Stage
+    ).all()
+
+    # Step 3: Format the stats into the Pydantic model structure
+    stats = {
+        "total_applications": 0,
+        "shortlisted": 0,
+        "pending_review": 0, # Assuming "Pending Review" is a stage
+        "rejected": 0 # Assuming "Rejected" or "Not a Fit" is a stage
+    }
+    
+    total_apps = 0
+    for stage, count in stage_counts:
+        total_apps += count
+        if stage == "Shortlisted":
+            stats["shortlisted"] = count
+        elif stage == "Pending Review":
+            stats["pending_review"] = count
+        elif stage in ["Rejected", "Not a Fit"]: # Handle multiple rejection-like statuses
+            stats["rejected"] += count # Use += to combine them
+    
+    stats["total_applications"] = total_apps
+
+    # Step 4: Assemble and return the final response object
+    # Pydantic will automatically validate this against the JobDetails schema
+    return {
+        "JobID": db_job.JobID,
+        "JobTitle": db_job.JobTitle,
+        "department": db_job.department,
+        "portfolio": db_job.portfolio,
+        "JobType": db_job.JobType,
+        "Location": db_job.Location,
+        "pipeline_stats": stats,
+        "required_skills": db_job.required_skills,
+        "interview_stages": db_job.interview_stages,
+        "Description": db_job.Description
+    }
 
 
-@router.get("/{job_id}/applications", response_model=List[candidate_schema.JobApplication])
+
+@router.get("/{job_id}/applications", response_model=List[candidate_schema.ApplicationWithCandidateInfo])
 def read_applications_for_job(job_id: int, stage: Optional[str] = None, db: Session = Depends(get_db), current_user: user_model.User = Depends(get_current_active_user)):
     db_job = db.query(job_model.JobPosting).filter(job_model.JobPosting.JobID == job_id).first()
     if not db_job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    query = db.query(candidate_model.JobApplication).filter(candidate_model.JobApplication.JobID == job_id)
+    query = db.query(candidate_model.JobApplication).options(
+        selectinload(candidate_model.JobApplication.candidate)
+    ).filter(candidate_model.JobApplication.JobID == job_id)
+    
     if stage:
         query = query.filter(candidate_model.JobApplication.Stage == stage)
+        
     applications = query.order_by(candidate_model.JobApplication.MatchScore.desc()).all()
     return applications

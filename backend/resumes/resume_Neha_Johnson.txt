@@ -1,0 +1,38 @@
+Neha Johnson
+neha.johnson@example.com
+(225) 740-1292
+LinkedIn: linkedin.com/in/neha-johnson765
+
+Summary
+Machine Learning Engineer with 10 years of experience in designing and deploying scalable AI models. Proficient in SQL, PyTorch, and AWS. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- SQL
+- PyTorch
+- AWS
+- Deep Learning
+- Python
+
+Experience
+DataSys, Machine Learning Engineer
+Jan 2020 - Dec 2023
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Optimized a reinforcement learning model for autonomous navigation.
+- Collaborated with cross-functional teams to integrate models into production.
+
+SmartAnalytics, Data Scientist
+Jun 2015 - Dec 2019
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+MIT, M.S. in Computer Science
+2013 - 2015
+
+Projects
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty

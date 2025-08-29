@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Text, ForeignKey, NUMERIC, text, JSON
 from app.database.base import Base
-
+from sqlalchemy.orm import relationship 
 class Candidate(Base):
     __tablename__ = "Candidates"
     CandidateID = Column(Integer, primary_key=True, index=True)
@@ -10,6 +10,7 @@ class Candidate(Base):
     Email = Column(String(255), unique=True, index=True)
     Phone = Column(String(50))
     ResumeLink = Column(Text)
+    ResumeFilePath = Column(String, nullable=True)
     ExperienceYears = Column(NUMERIC)
     NoticePeriod = Column(Integer)
     NoticePeriodEndDate = Column(TIMESTAMP)
@@ -25,8 +26,10 @@ class Candidate(Base):
 
 class JobApplication(Base):
     __tablename__ = "JobApplications"
+    candidate = relationship("Candidate")
     ApplicationID = Column(Integer, primary_key=True, index=True)
     CandidateID = Column(Integer, ForeignKey("Candidates.CandidateID"), nullable=False)
+    job = relationship("JobPosting")
     JobID = Column(Integer, ForeignKey("JobPostings.JobID"), nullable=False)
     MatchScore = Column(NUMERIC)
     ScoreDetails = Column(JSON)

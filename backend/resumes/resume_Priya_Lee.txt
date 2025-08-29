@@ -1,0 +1,38 @@
+Priya Lee
+priya.lee@example.com
+(672) 495-1013
+LinkedIn: linkedin.com/in/priya-lee148
+
+Summary
+Machine Learning Engineer with 4 years of experience in designing and deploying scalable AI models. Proficient in Computer Vision, Python, and NLP. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- Computer Vision
+- Python
+- NLP
+- Scikit-learn
+- PyTorch
+
+Experience
+Quantum AI, Machine Learning Engineer
+Jan 2022 - Dec 2025
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Built a convolutional neural network for image classification using PyTorch.
+- Collaborated with cross-functional teams to integrate models into production.
+
+DataSys, Data Scientist
+Jun 2015 - Dec 2020
+- Optimized a reinforcement learning model for autonomous navigation.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+Stanford, M.S. in Computer Science
+2012 - 2015
+
+Projects
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Optimized a reinforcement learning model for autonomous navigation.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty

@@ -3,7 +3,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict
 from datetime import datetime
-
+from .job_schema import Job # Import Job schema for nesting
+from .skill_schema import Skill
 # --- Candidate Schemas ---
 class CandidateBase(BaseModel):
     FullName: str
@@ -80,3 +81,33 @@ class CandidateInsights(BaseModel):
 # For updating application stage
 class UpdateStage(BaseModel):
     stage: str
+
+class ApplicationWithCandidateInfo(JobApplication):
+    """
+    Extends the JobApplication schema to include the full candidate object.
+    """
+    candidate: Candidate # This will nest the candidate details
+
+    class Config:
+        from_attributes = True    
+
+class FailedUpload(BaseModel):
+    filename: str
+    error: str
+
+class BulkUploadResult(BaseModel):
+    successful_uploads: List[ApplicationWithCandidateInfo]
+    failed_uploads: List[FailedUpload]        
+
+class CandidateProfileResponse(BaseModel):
+    """
+    The complete data structure for the candidate profile page.
+    """
+    application: JobApplication
+    candidate: Candidate
+    job: Job
+    all_candidate_skills: List[Skill]
+    matched_skills: List[Skill]
+
+    class Config:
+        from_attributes = True    

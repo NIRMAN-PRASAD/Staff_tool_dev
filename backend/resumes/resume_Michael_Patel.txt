@@ -1,0 +1,38 @@
+Michael Patel
+michael.patel@example.com
+(748) 916-7237
+LinkedIn: linkedin.com/in/michael-patel226
+
+Summary
+Machine Learning Engineer with 6 years of experience in designing and deploying scalable AI models. Proficient in AWS, PyTorch, and TensorFlow. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- AWS
+- PyTorch
+- TensorFlow
+- NLP
+- Scikit-learn
+
+Experience
+SmartAnalytics, Machine Learning Engineer
+Jan 2018 - Dec 2022
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Optimized a reinforcement learning model for autonomous navigation.
+- Collaborated with cross-functional teams to integrate models into production.
+
+IntelliTech, Data Scientist
+Jun 2015 - Dec 2019
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+MIT, M.S. in Computer Science
+2015 - 2019
+
+Projects
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty

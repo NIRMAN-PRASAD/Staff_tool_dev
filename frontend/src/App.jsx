@@ -7,7 +7,7 @@ import './App.css';
 
 // Import Layouts
 import AdminLayout from './components/AdminLayout.jsx';
-
+import CandidateListPage from './pages/CandidateListPage.jsx';
 // Import Pages
 import AuthPage from './pages/AuthPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -18,6 +18,7 @@ import JobManagementPage from './pages/JobManagementPage.jsx';
 import PortfolioManagementPage from './pages/PortfolioManagementPage.jsx';
 import DepartmentManagementPage from './pages/DepartmentManagementPage.jsx';
 import CandidatePipelinePage from './pages/CandidatePipelinePage.jsx';
+import CandidateProfilePage from './pages/CandidateProfilePage.jsx';
 
 const PrivateRoute = ({ children, requiredRole }) => {
     const { user, authToken } = useAuth();
@@ -61,7 +62,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/" element={authToken ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
-
+          <Route path="/jobs/:jobId/candidates" element={<PrivateRoute><CandidateListPage /></PrivateRoute>} />
+          <Route path="/application/:applicationId/profile" element={<PrivateRoute><CandidateProfilePage /></PrivateRoute>} />
           {/* Standard Protected Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/manage-jobs" element={<PrivateRoute requiredRole="HR"><JobManagementPage /></PrivateRoute>} />

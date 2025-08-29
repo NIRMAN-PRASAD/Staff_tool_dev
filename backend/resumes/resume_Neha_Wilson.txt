@@ -1,0 +1,38 @@
+Neha Wilson
+neha.wilson@example.com
+(495) 595-2218
+LinkedIn: linkedin.com/in/neha-wilson547
+
+Summary
+Machine Learning Engineer with 9 years of experience in designing and deploying scalable AI models. Proficient in Deep Learning, Scikit-learn, and Python. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- Deep Learning
+- Scikit-learn
+- Python
+- AWS
+- NLP
+
+Experience
+AI Innovations, Machine Learning Engineer
+Jan 2018 - Dec 2025
+- Optimized a reinforcement learning model for autonomous navigation.
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Collaborated with cross-functional teams to integrate models into production.
+
+DataSys, Data Scientist
+Jun 2016 - Dec 2017
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+University of Toronto, M.S. in Computer Science
+2012 - 2017
+
+Projects
+- Optimized a reinforcement learning model for autonomous navigation.
+- Developed a BERT-based NLP model for sentiment analysis with 92% accuracy.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty

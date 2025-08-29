@@ -1,0 +1,38 @@
+Rahul Kumar
+rahul.kumar@example.com
+(383) 784-6107
+LinkedIn: linkedin.com/in/rahul-kumar226
+
+Summary
+Machine Learning Engineer with 6 years of experience in designing and deploying scalable AI models. Proficient in NLP, SQL, and AWS. Passionate about solving complex problems using data-driven approaches.
+
+Skills
+- NLP
+- SQL
+- AWS
+- Deep Learning
+- Computer Vision
+
+Experience
+NeuroNet, Machine Learning Engineer
+Jan 2021 - Dec 2025
+- Optimized a reinforcement learning model for autonomous navigation.
+- Built a convolutional neural network for image classification using PyTorch.
+- Collaborated with cross-functional teams to integrate models into production.
+
+IntelliTech, Data Scientist
+Jun 2018 - Dec 2021
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+- Developed data pipelines to preprocess large datasets for model training.
+
+Education
+Carnegie Mellon, M.S. in Computer Science
+2018 - 2020
+
+Projects
+- Optimized a reinforcement learning model for autonomous navigation.
+- Implemented a recommendation system using collaborative filtering for e-commerce.
+
+Certifications
+- Certified TensorFlow Developer
+- AWS Certified Machine Learning – Specialty
